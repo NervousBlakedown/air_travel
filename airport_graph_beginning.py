@@ -33,11 +33,15 @@ def draw_flight_network(G):
     plt.title("Connecting Flight Locations")
     plt.show()
 
+# Init script
 def main():
-    # User can modify the number of airports and flights as needed
-    num_airports = 10
-    num_flights = 5000
-    
+    try:
+        num_airports = int(input("Enter number of airports and press enter: "))
+        num_flights = int(input("Enter number of flights and press enter: "))
+    except ValueError:
+        print("Please enter a valid integer for both airports and flights.")
+        return  # Exit the function if there was an input error
+
     airports = generate_airports(num_airports)
     flights = generate_flights(airports, num_flights)
     df = pd.DataFrame(flights, columns=['flight_arrival', 'flight_destination', 'connecting_flight_airport'])
@@ -46,3 +50,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
