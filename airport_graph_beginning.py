@@ -23,44 +23,56 @@ def create_flight_network(airports, flights):
         G.add_edge(*flight[:2], connecting_flight=flight[2])
     return G
 
-def draw_3d_network(G, pos):
-    # Extract the node and edge positions
+def draw_3d_network(G, pos, flights_df):
+    # Extract the node and edge positions and information
     edge_x = []
     edge_y = []
     edge_z = []
+    edge_info = []  # Stores the text for edge hover information
     for edge in G.edges():
         x0, y0, z0 = pos[edge[0]]
         x1, y1, z1 = pos[edge[1]]
         edge_x.extend([x0, x1, None])
         edge_y.extend([y0, y1, None])
         edge_z.extend([z0, z1, None])
+        # Count the number of flights for this connection
+        flights_count = flights_df[(flights_df['flight_arrival'] == edge[0]) & 
+                                   (flights_df['flight_destination'] == edge[1])].shape[0]
+        edge_info.append(f"{edge[0]} to {edge[1]}: {flights_count} flights")
     
     # Create a trace for the edges
     edge_trace = go.Scatter3d(
         x=edge_x, y=edge_y, z=edge_z,
         line=dict(width=0.5, color='#888'),
-        hoverinfo='none',
+        hoverinfo='text',
+        text=edge_info,
         mode='lines')
 
     # Create a trace for the nodes
     node_x = []
     node_y = []
     node_z = []
+    node_info = []  # Stores the text for node hover information
     for node in G.nodes():
         x, y, z = pos[node]
         node_x.append(x)
         node_y.append(y)
         node_z.append(z)
+        # Prepare the hover text with airport name and number of connections
+        connections_count = len(list(G.neighbors(node)))
+        node_info.append(f"{node}: {connections_count} connections")
 
     node_trace = go.Scatter3d(
         x=node_x, y=node_y, z=node_z,
         mode='markers',
-        marker=dict(size=10, line_width=2))
+        marker=dict(size=10, line_width=2),
+        hoverinfo='text',
+        text=node_info)
 
     # Create the figure
     fig = go.Figure(data=[edge_trace, node_trace],
                     layout=go.Layout(
-                        title='<br>Network graph made with Python',
+                        title='<br>Network graph of flights',
                         titlefont_size=16,
                         showlegend=False,
                         hovermode='closest',
@@ -100,9 +112,10 @@ def main():
 
     airports = generate_airports(num_airports)
     flights = generate_flights(airports, num_flights)
+    df = pd.DataFrame(flights, columns=['flight_arrival', 'flight_destination', 'connecting_flight_airport'])  # Correct variable name
     G = create_flight_network(airports, flights)
     pos_3d = generate_3d_positions(G)  # Generate 3D positions for the nodes
-    draw_3d_network(G, pos_3d)  # Draw the 3D network
+    draw_3d_network(G, pos_3d, df)  # Draw the 3D network
 
 # Run script
 if __name__ == "__main__":
