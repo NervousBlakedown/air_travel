@@ -3,50 +3,46 @@ import pandas as pd
 import random
 import matplotlib.pyplot as plt
 
-# Create a list of airport names
-airports = ['JFK', 'LAX', 'ORD', 'DFW', 'SFO', 'MCO', 'SEA', 'DEN', 'ATL', 'BOS']
+def generate_airports(num_airports=10):
+    return ['AIRPORT{}'.format(i) for i in range(num_airports)]
 
-# Create a random dataset of flight connections
-flights = []
-for i in range(5000):
-    arrival = random.choice(airports)
-    destination = random.choice(airports)
-    while arrival == destination:
-        destination = random.choice(airports)
-    connecting_flight = random.choice(airports)
-    flights.append((arrival, destination, connecting_flight))
+def generate_flights(airports, num_flights=5000):
+    flights = []
+    for _ in range(num_flights):
+        arrival, destination = random.sample(airports, 2)
+        connecting_flight = random.choice(airports)
+        flights.append((arrival, destination, connecting_flight))
+    return flights
 
-# Create a Pandas DataFrame from the flight data
-df = pd.DataFrame(flights, columns=['flight_arrival', 'flight_destination', 'connecting_flight_airport'])
+def create_flight_network(airports, flights):
+    G = nx.Graph()
+    G.add_nodes_from(airports)
+    for flight in flights:
+        G.add_edge(*flight[:2], connecting_flight=flight[2])
+    return G
 
-# Create a new network graph object
-G = nx.Graph()
+def draw_flight_network(G):
+    pos = nx.spring_layout(G, seed=42)
+    nx.draw_networkx_nodes(G, pos, node_size=200, node_color='lightblue')
+    nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.4)
+    labels = {node: node for node in G.nodes()}
+    nx.draw_networkx_labels(G, pos, labels, font_size=10, font_weight='bold')
+    edge_labels = nx.get_edge_attributes(G, 'connecting_flight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=8, font_color='red')
+    plt.axis('off')
+    plt.title("Connecting Flight Locations")
+    plt.show()
 
-# Add nodes to the graph for each airport
-for airport in airports:
-    G.add_node(airport)
+def main():
+    # User can modify the number of airports and flights as needed
+    num_airports = 10
+    num_flights = 5000
+    
+    airports = generate_airports(num_airports)
+    flights = generate_flights(airports, num_flights)
+    df = pd.DataFrame(flights, columns=['flight_arrival', 'flight_destination', 'connecting_flight_airport'])
+    G = create_flight_network(airports, flights)
+    draw_flight_network(G)
 
-# Add edges to the graph for each flight connection
-for index, row in df.iterrows():
-    G.add_edge(row['flight_arrival'], row['flight_destination'], connecting_flight=row['connecting_flight_airport'])
-
-# Define the positions of the nodes
-pos = nx.spring_layout(G, seed=42)
-
-# Draw the nodes and edges of the graph
-nx.draw_networkx_nodes(G, pos, node_size=200, node_color='lightblue')
-nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.4)
-
-# Label the nodes with their names
-labels = {node: node for node in G.nodes()}
-nx.draw_networkx_labels(G, pos, labels, font_size=10, font_weight='bold')
-
-# Label the edges with the connecting flight airports
-edge_labels = nx.get_edge_attributes(G, 'connecting_flight')
-nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=8, font_color='red')
-
-# Display the graph
-plt.axis('off')
-plt.title("Connecting Flight Locations")
-plt.show()
-
+if __name__ == "__main__":
+    main()
